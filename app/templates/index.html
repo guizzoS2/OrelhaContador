@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Transações{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Upload de Transações</h5>
+                <form action="{{ url_for('upload_transactions') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Arquivo de Transações</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".txt">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Upload
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Resumo</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <h6>Débitos</h6>
+                        <p class="amount-positive">R$ {{ "%.2f"|format(debit_total) }}</p>
+                    </div>
+                    <div class="col-6">
+                        <h6>Créditos</h6>
+                        <p class="amount-negative">R$ {{ "%.2f"|format(credit_total) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Transações</h5>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Valor</th>
+                        <th>Categoria</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr class="transaction-row">
+                        <td>{{ transaction.formatted_date }}</td>
+                        <td>{{ transaction.description }}</td>
+                        <td class="{% if transaction.is_credit %}amount-negative{% else %}amount-positive{% endif %}">
+                            {{ transaction.formatted_amount }}
+                        </td>
+                        <td>
+                            {% if transaction.category %}
+                                <span class="badge bg-primary">{{ transaction.category.name }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Não categorizado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#categorizeModal{{ transaction.id }}">
+                                <i class="bi bi-tag"></i> Categorizar
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Modal for categorization -->
+                    <div class="modal fade" id="categorizeModal{{ transaction.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Categorizar Transação</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form action="{{ url_for('categorize_transaction', transaction_id=transaction.id) }}" method="post">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Descrição</label>
+                                            <p class="form-control-plaintext">{{ transaction.description }}</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="category{{ transaction.id }}" class="form-label">Categoria</label>
+                                            <select class="form-select" id="category{{ transaction.id }}" name="category_id" required>
+                                                <option value="">Selecione uma categoria</option>
+                                                {% for category in categories %}
+                                                <option value="{{ category.id }}" 
+                                                        {% if transaction.category_id == category.id %}selected{% endif %}>
+                                                    {{ category.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="keyword{{ transaction.id }}" class="form-label">Palavra-chave (opcional)</label>
+                                            <input type="text" class="form-control" id="keyword{{ transaction.id }}" 
+                                                   name="keyword" placeholder="Ex: McDonalds">
+                                            <div class="form-text">
+                                                Adicione uma palavra-chave para ajudar na categorização automática de transações similares.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">Salvar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add any JavaScript for dynamic features here
+    $(document).ready(function() {
+        // Enable tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %} 
